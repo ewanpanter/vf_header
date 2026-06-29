@@ -238,7 +238,7 @@ speechImg.onload=()=>{ speechReady=true; }; speechImg.src=SPEECHMARK_URI;
 
 /* ---------- settings ---------- */
 const DEFAULTS = { track:0.35, head:0.65, grav:0.55, pow:1.0, goalH:0.26, secs:10, qs:3,
-                   sound:true, ball:"football", faceStart:false, localAI:false };
+                   sound:true, ball:"speechmark", faceStart:false, localAI:false };
 let cfg = { ...DEFAULTS, ...JSON.parse(localStorage.getItem("hq_settings")||"{}") };
 function saveCfg(){ localStorage.setItem("hq_settings", JSON.stringify(cfg)); }
 
