@@ -1,0 +1,1094 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Header Challenge</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;800&family=Space+Grotesk:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  /* Vodafone brand font — expects Vodafone_Rg.ttf and Vodafone_Bd.ttf in the same folder.
+     If they're missing it falls back to the web fonts, then a system sans. */
+  @font-face{font-family:'Vodafone';src:url('Vodafone_Rg.ttf') format('truetype');
+    font-weight:100 600;font-style:normal;font-display:swap;}
+  @font-face{font-family:'Vodafone';src:url('Vodafone_Bd.ttf') format('truetype');
+    font-weight:601 900;font-style:normal;font-display:swap;}
+  :root{
+    --pitch:#0A1410; --line:#F2F7F3; --amber:#E60000;
+    --green:#37C871; --red:#E4452A;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;user-select:none}
+  html,body{height:100%;background:var(--pitch);overflow:hidden;
+    font-family:'Vodafone','Space Grotesk',sans-serif;color:var(--line)}
+  body.hidecursor{cursor:none}
+  video{display:none}
+  canvas{position:absolute;inset:0;width:100%;height:100%}
+  .scoreboard{
+    position:fixed;top:0;left:0;right:0;display:flex;justify-content:space-between;
+    align-items:center;padding:14px 28px;z-index:5;
+    font-family:'Vodafone','Unbounded',sans-serif;letter-spacing:.08em;
+    background:linear-gradient(rgba(5,10,8,.85),transparent);
+  }
+  .scoreboard .brand{font-weight:800;font-size:clamp(16px,2vw,26px)}
+  .scoreboard .brand span{color:var(--amber)}
+  .scoreboard .meta{font-weight:500;font-size:clamp(13px,1.4vw,18px);color:var(--amber);
+    text-shadow:0 0 12px rgba(230,0,0,.6)}
+  #gear{position:fixed;bottom:10px;right:12px;z-index:9;background:none;border:none;
+    color:rgba(242,247,243,.35);font-size:22px;cursor:pointer}
+  #overlay{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;
+    justify-content:center;text-align:center;z-index:4;pointer-events:none;padding:24px}
+  .big{font-family:'Vodafone','Unbounded',sans-serif;font-weight:800;
+    font-size:clamp(32px,5.5vw,76px);line-height:1.08;text-shadow:0 4px 30px rgba(0,0,0,.7)}
+  .sub{margin-top:18px;font-size:clamp(16px,2vw,24px);opacity:.92;max-width:52ch}
+  .amber{color:var(--amber)}
+  .pulse{animation:pulse 1.6s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.45}}
+  .pop{animation:pop .45s cubic-bezier(.2,1.6,.4,1)}
+  @keyframes pop{from{transform:scale(.6);opacity:0}to{transform:scale(1);opacity:1}}
+  @media (prefers-reduced-motion: reduce){.pulse,.pop{animation:none}}
+
+  .board{margin-top:22px;font-size:clamp(15px,1.8vw,22px);
+    background:rgba(7,14,11,.85);border:2px solid var(--amber);border-radius:14px;
+    padding:14px 26px;min-width:min(460px,86vw)}
+  .board h3{font-family:'Vodafone','Unbounded',sans-serif;font-weight:800;color:var(--amber);
+    font-size:clamp(14px,1.6vw,20px);letter-spacing:.12em;margin-bottom:8px}
+  .board .row{display:flex;justify-content:space-between;gap:24px;padding:3px 0}
+  .board .row.me{color:var(--amber);font-weight:600}
+  .board .rank{opacity:.6;width:2.2em;text-align:left}
+  .board .nm{flex:1;text-align:left;text-transform:uppercase}
+
+  #entryWrap{margin-top:24px;pointer-events:auto}
+  #goBtn{margin-top:26px;pointer-events:auto;cursor:pointer;
+    font-family:'Vodafone','Unbounded',sans-serif;font-weight:800;letter-spacing:.12em;
+    font-size:clamp(26px,3.4vw,44px);color:#fff;background:var(--amber);
+    border:none;border-radius:999px;padding:18px 64px;
+    box-shadow:0 0 34px rgba(230,0,0,.65);animation:pulse 1.6s ease-in-out infinite}
+  #goBtn:active{transform:scale(.96)}
+  #nameInput{font-family:'Vodafone','Space Grotesk',sans-serif;font-weight:600;text-transform:none;
+    font-size:clamp(20px,2.6vw,32px);text-align:center;letter-spacing:.02em;
+    background:rgba(7,14,11,.85);color:var(--line);border:3px solid var(--amber);
+    border-radius:14px;padding:12px 20px;width:min(520px,86vw);outline:none;user-select:text}
+  #nameInput.bad{border-color:var(--red);animation:nudge .3s}
+  @keyframes nudge{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+  #entryWrap .hint{margin-top:10px;font-size:clamp(13px,1.5vw,17px);opacity:.75}
+
+  #admin{position:fixed;top:0;right:0;bottom:0;width:min(380px,92vw);z-index:20;
+    background:rgba(7,14,11,.97);border-left:2px solid var(--amber);
+    padding:26px;overflow-y:auto;transform:translateX(105%);transition:transform .25s}
+  #admin.open{transform:none}
+  #admin h2{font-family:'Vodafone','Unbounded',sans-serif;font-weight:800;color:var(--amber);
+    letter-spacing:.1em;font-size:18px;margin-bottom:4px}
+  #admin .tip{font-size:13px;opacity:.6;margin-bottom:14px;line-height:1.5}
+  #admin label{display:block;font-size:14px;margin:15px 0 4px;letter-spacing:.04em}
+  #admin label b{color:var(--amber);float:right;font-weight:600}
+  #admin input[type=range]{width:100%;accent-color:var(--amber)}
+  #admin .check{display:flex;align-items:center;gap:10px;margin-top:16px;font-size:14px}
+  #admin .check input{accent-color:var(--amber);width:18px;height:18px}
+  #admin .btns{display:flex;flex-direction:column;gap:10px;margin-top:24px}
+  #admin button{font-family:'Vodafone','Unbounded',sans-serif;font-weight:800;letter-spacing:.08em;
+    font-size:14px;padding:13px;border-radius:10px;border:2px solid var(--amber);
+    background:none;color:var(--line);cursor:pointer}
+  #admin button:hover{background:rgba(230,0,0,.15)}
+  #admin button.danger{border-color:var(--red);color:var(--red)}
+  #admin button.primary{background:var(--amber);color:#0A1410}
+  .hidden{display:none !important}
+</style>
+</head>
+<body>
+
+<div class="scoreboard">
+  <div class="brand" id="brand"></div>
+  <div class="meta" id="meta"></div>
+</div>
+<button id="gear" title="Admin (A)">⚙</button>
+
+<video id="cam" autoplay playsinline muted></video>
+<canvas id="game"></canvas>
+
+<div id="overlay">
+  <div class="big" id="ovTitle"></div>
+  <div class="sub" id="ovSub"></div>
+  <div class="board hidden" id="boardBox"></div>
+  <button id="goBtn" class="hidden">GO!</button>
+  <div id="entryWrap" class="hidden">
+    <input id="nameInput" type="email" maxlength="40" placeholder="name@vodafone.com" autocomplete="off" inputmode="email">
+    <div class="hint" id="entryHint">Enter your email and press ENTER for the leaderboard (used for prize follow-up)</div>
+  </div>
+</div>
+
+<div id="admin">
+  <button id="btnClose" style="position:absolute;top:18px;right:20px;font-size:22px;width:auto;padding:2px 10px;border:none;color:rgba(242,247,243,.7)">✕</button>
+  <h2>ADMIN</h2>
+  <div class="tip"><b>A</b> opens/closes this panel (or tap ✕) · <b>R</b> resets to the start screen ·
+  <b>F</b> fullscreen · <b>M</b> mute. Settings save on this Mac automatically.
+  Click anywhere once after loading to unlock sound.</div>
+  <div class="tip" id="qStatus">Questions: loading…</div>
+
+  <label>Tracking response <b id="vTrack"></b></label>
+  <input type="range" id="sTrack" min="0.10" max="0.60" step="0.05">
+  <label>Head ring size <b id="vHead"></b></label>
+  <input type="range" id="sHead" min="0.40" max="1.10" step="0.05">
+  <label>Ball gravity (drop speed) <b id="vGrav"></b></label>
+  <input type="range" id="sGrav" min="0.25" max="0.90" step="0.05">
+  <label>Header power <b id="vPow"></b></label>
+  <input type="range" id="sPow" min="0.60" max="1.60" step="0.10">
+  <label>Goal size <b id="vGoal"></b></label>
+  <input type="range" id="sGoal" min="0.14" max="0.70" step="0.02">
+  <label>Seconds per question <b id="vSecs"></b></label>
+  <input type="range" id="sSecs" min="6" max="20" step="1">
+  <label>Questions per game <b id="vQs"></b></label>
+  <input type="range" id="sQs" min="1" max="5" step="1">
+
+  <div class="check"><input type="checkbox" id="cSound"><span>Sound effects (M)</span></div>
+  <div class="check"><input type="checkbox" id="cBall"><span>Use Vodafone speechmark ball (off = football)</span></div>
+  <div class="check"><input type="checkbox" id="cFace"><span>Auto-start when a face is seen (off = GO button / Space)</span></div>
+  <div class="check"><input type="checkbox" id="cLocal"><span>Load AI tracking from local "mediapipe" folder (offline — reloads page)</span></div>
+
+  <div class="btns">
+    <button class="primary" id="btnReset">RESET GAME (R)</button>
+    <button id="btnFull">FULLSCREEN (F)</button>
+    <button id="btnDefaults">RESTORE DEFAULT SETTINGS</button>
+    <button class="danger" id="btnClearBoard">CLEAR LEADERBOARD</button>
+  </div>
+
+  <div class="tip" id="fileStatus" style="margin-top:22px">Results file: not linked.</div>
+  <div class="btns" style="margin-top:8px">
+    <button id="btnConnect">CONNECT RESULTS FILE (AUTO-SAVE)</button>
+    <button id="btnExport">EXPORT RESULTS (CSV)</button>
+    <button id="btnImport">IMPORT RESULTS (FILE)</button>
+  </div>
+</div>
+
+<script type="module">
+/* ================================================================
+   EDIT ME — stand setup
+   ================================================================ */
+const COMPANY_NAME = "VBTS UK";
+const STAND_NAME   = "AI HEADER CHALLENGE";
+
+/* Scoring: correct header = 100 pts + 10 pts per second left on the
+   clock (the clock only starts once the ball drops, so reading time
+   is free). Wrong answer or timeout = 0 for that question. */
+const POINTS_CORRECT = 100;
+const POINTS_PER_SECOND_LEFT = 10;
+
+/* Questions live in the separate file  questions.csv  (open it in
+   Excel or Numbers — one row per question, columns: question, answerA,
+   answerB, correct). The list below is only a built-in fallback used
+   if questions.csv can't be found (e.g. opened without a server). */
+const FALLBACK_QUESTIONS = [
+  { q:"Who coined the term 'Artificial Intelligence'?", a:"John McCarthy", b:"Alan Turing", correct:"A" },
+  { q:"What does 'LLM' stand for?", a:"Large Language Model", b:"Logical Learning Machine", correct:"A" },
+  { q:"The Turing Test checks if a machine can…", a:"Beat you at chess", b:"Pass as human in chat", correct:"B" },
+  { q:"Roughly when was the first chatbot, ELIZA, built?", a:"1960s", b:"1990s", correct:"A" },
+  { q:"'Hallucination' in AI means the model…", a:"Overheats", b:"Makes things up", correct:"B" },
+];
+let QUESTION_BANK = [...FALLBACK_QUESTIONS];
+let questionSource = "built-in fallback";
+
+/* Minimal RFC-4180 CSV parser: handles quoted fields, commas and quotes inside them */
+function parseCSV(text){
+  const rows=[]; let row=[], field="", inQ=false;
+  for(let i=0;i<text.length;i++){
+    const c=text[i];
+    if(inQ){
+      if(c==='"'){ if(text[i+1]==='"'){ field+='"'; i++; } else inQ=false; }
+      else field+=c;
+    }else{
+      if(c==='"') inQ=true;
+      else if(c===',') { row.push(field); field=""; }
+      else if(c==='\n'){ row.push(field); rows.push(row); row=[]; field=""; }
+      else if(c!=='\r') field+=c;
+    }
+  }
+  if(field.length||row.length){ row.push(field); rows.push(row); }
+  return rows;
+}
+async function loadQuestions(){
+  try{
+    const res = await fetch("questions.csv", {cache:"no-store"});
+    if(!res.ok) throw new Error("HTTP "+res.status);
+    const rows = parseCSV(await res.text()).filter(r=>r.some(c=>(c||"").trim()!==""));
+    let start = rows[0] && /quest/i.test(rows[0][0]||"") ? 1 : 0;   /* skip header row */
+    const out=[];
+    for(let k=start;k<rows.length;k++){
+      const q=(rows[k][0]||"").trim(), a=(rows[k][1]||"").trim(),
+            b=(rows[k][2]||"").trim(), cor=(rows[k][3]||"").trim().toUpperCase();
+      if(!q||!a||!b) continue;
+      out.push({ q, a, b, correct: cor.startsWith("B") ? "B" : "A" });
+    }
+    if(!out.length) throw new Error("no valid rows");
+    QUESTION_BANK = out; questionSource = "questions.csv";
+  }catch(e){
+    QUESTION_BANK = [...FALLBACK_QUESTIONS]; questionSource = "built-in fallback";
+    console.warn("Could not load questions.csv — using built-in questions.", e);
+  }
+  const qs=document.getElementById("qStatus");
+  if(qs) qs.textContent = `Questions: ${QUESTION_BANK.length} loaded from ${questionSource}.`;
+}
+/* ================================================================ */
+
+/* MediaPipe face tracking is loaded dynamically in init() — either from the
+   CDN, or from a local ./mediapipe folder when "offline AI files" is on. */
+
+/* Real Vodafone speechmark, extracted from the supplied logo (white on transparent) */
+const SPEECHMARK_URI = "data:image/png;base64,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";
+const speechImg = new Image(); let speechReady=false;
+speechImg.onload=()=>{ speechReady=true; }; speechImg.src=SPEECHMARK_URI;
+
+/* ---------- settings ---------- */
+const DEFAULTS = { track:0.35, head:0.65, grav:0.55, pow:1.0, goalH:0.26, secs:10, qs:3,
+                   sound:true, ball:"football", faceStart:false, localAI:false };
+let cfg = { ...DEFAULTS, ...JSON.parse(localStorage.getItem("hq_settings")||"{}") };
+function saveCfg(){ localStorage.setItem("hq_settings", JSON.stringify(cfg)); }
+
+/* ---------- leaderboard ---------- */
+function getBoard(){ return JSON.parse(localStorage.getItem("hq_board")||"[]"); }
+function saveBoard(b){ localStorage.setItem("hq_board", JSON.stringify(b)); }
+function displayName(e){
+  const v = e.email || e.name || "PLAYER";        /* show the bit before @ on screen */
+  const local = v.includes("@") ? v.split("@")[0] : v;
+  return local.slice(0,16).toUpperCase();
+}
+function boardHTML(title, n, highlight){
+  const b = getBoard().slice(0,n);
+  if(!b.length) return "";
+  let html = `<h3>${title}</h3>`;
+  b.forEach((e,i)=>{
+    const me = highlight && e.t===highlight ? " me" : "";
+    html += `<div class="row${me}"><span class="rank">${i+1}.</span><span class="nm">${esc(displayName(e))}</span><span>${e.pts} PTS</span></div>`;
+  });
+  return html;
+}
+function esc(s){ return s.replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+
+/* ---------- results file: auto-save to disk + restore on restart ---------- */
+const FS_SUPPORTED = typeof window.showSaveFilePicker === "function";
+let fileHandle=null, pendingReconnect=false;
+
+function idbOpen(){ return new Promise((res,rej)=>{ const r=indexedDB.open("hq_db",1);
+  r.onupgradeneeded=()=>r.result.createObjectStore("kv"); r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); }); }
+async function idbSet(k,v){ const db=await idbOpen(); return new Promise((res,rej)=>{ const tx=db.transaction("kv","readwrite"); tx.objectStore("kv").put(v,k); tx.oncomplete=()=>res(); tx.onerror=()=>rej(tx.error); }); }
+async function idbGet(k){ const db=await idbOpen(); return new Promise((res,rej)=>{ const tx=db.transaction("kv","readonly"); const q=tx.objectStore("kv").get(k); q.onsuccess=()=>res(q.result); q.onerror=()=>rej(q.error); }); }
+
+/* merge two lists, de-duped by timestamp+email, keep top 500 */
+function mergeBoard(arr){
+  const map=new Map();
+  for(const e of [...(arr||[]), ...getBoard()]){
+    if(!e || typeof e.pts!=="number") continue;
+    const key=(e.t||0)+"|"+(e.email||e.name||"");
+    if(!map.has(key)) map.set(key,e);
+  }
+  const merged=[...map.values()].sort((a,b)=> b.pts-a.pts || (a.t||0)-(b.t||0)).slice(0,500);
+  saveBoard(merged);
+}
+async function ensurePerm(h,mode="readwrite"){
+  try{
+    if((await h.queryPermission({mode}))==="granted") return true;
+    if((await h.requestPermission({mode}))==="granted") return true;
+  }catch(e){}
+  return false;
+}
+async function connectFile(){
+  if(!FS_SUPPORTED){ alert("Auto-save to a file needs Google Chrome. You can still use Export / Import below."); return; }
+  try{
+    fileHandle = await window.showSaveFilePicker({ suggestedName:"vbts-leaderboard.json",
+      types:[{description:"Leaderboard JSON", accept:{"application/json":[".json"]}}] });
+    await idbSet("fileHandle", fileHandle);
+    await readFromFile();     /* fold in anything already in the chosen file */
+    await saveToFile();
+    setFileStatus();
+  }catch(e){ /* cancelled */ }
+}
+async function readFromFile(){
+  if(!fileHandle) return false;
+  if(!await ensurePerm(fileHandle)){ pendingReconnect=true; setFileStatus(); return false; }
+  try{
+    const f=await fileHandle.getFile(); const txt=await f.text();
+    if(txt.trim()) mergeBoard(JSON.parse(txt));
+    if(state===S.ATTRACT) toState(S.ATTRACT);   /* refresh the attract board */
+    return true;
+  }catch(e){ console.warn("results read failed",e); return false; }
+}
+async function saveToFile(){
+  if(!fileHandle) return;
+  if(!await ensurePerm(fileHandle)){ pendingReconnect=true; setFileStatus(); return; }
+  try{
+    const w=await fileHandle.createWritable();
+    await w.write(JSON.stringify(getBoard(),null,2));
+    await w.close();
+  }catch(e){ console.warn("results write failed",e); }
+}
+function setFileStatus(){
+  const el=document.getElementById("fileStatus"); if(!el) return;
+  if(!FS_SUPPORTED){ el.textContent="Results file: auto-save needs Chrome — use Export/Import."; return; }
+  if(!fileHandle){ el.textContent="Results file: not linked."; return; }
+  if(pendingReconnect){ el.textContent="Results file linked ("+fileHandle.name+") — click the screen once to reconnect."; return; }
+  el.textContent="Results file: auto-saving to "+fileHandle.name+".";
+}
+function exportCSV(){
+  const b=getBoard();
+  let csv="rank,email,points,correct,raw_points,num_questions,timestamp\n";
+  b.forEach((e,i)=>{ const em=(e.email||e.name||"").replace(/"/g,'""');
+    csv+=`${i+1},"${em}",${e.pts},${e.correct},${e.raw??""},${e.qs??""},${new Date(e.t||Date.now()).toISOString()}\n`; });
+  const blob=new Blob([csv],{type:"text/csv"});
+  const a=document.createElement("a"); a.href=URL.createObjectURL(blob);
+  a.download="vbts-leaderboard.csv"; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+}
+function importParse(text){
+  text=text.trim();
+  if(text.startsWith("[")){ try{ return JSON.parse(text); }catch(e){} }
+  const rows=parseCSV(text).filter(r=>r.some(c=>(c||"").trim()!==""));   /* CSV fallback */
+  let start = rows[0] && /rank|email/i.test(rows[0].join(",")) ? 1 : 0;
+  const out=[];
+  for(let k=start;k<rows.length;k++){
+    const r=rows[k], email=(r[1]||"").trim(), pts=parseInt(r[2])||0,
+          correct=parseInt(r[3])||0,
+          t=Date.parse(r[r.length-1]) || (Date.now()+k);   /* timestamp is always the last column */
+    if(email||pts) out.push({email,pts,correct,t});
+  }
+  return out;
+}
+function importFile(){
+  const inp=document.createElement("input"); inp.type="file";
+  inp.accept=".json,.csv,application/json,text/csv";
+  inp.onchange=async()=>{ const f=inp.files[0]; if(!f) return;
+    try{ mergeBoard(importParse(await f.text())); if(state===S.ATTRACT) toState(S.ATTRACT);
+      alert("Imported — leaderboard now has "+getBoard().length+" entries."); }
+    catch(e){ alert("Couldn't read that file."); } };
+  inp.click();
+}
+async function initResultsFile(){
+  if(!FS_SUPPORTED){ setFileStatus(); return; }
+  try{ fileHandle = await idbGet("fileHandle") || null; }catch(e){ fileHandle=null; }
+  if(fileHandle){
+    if((await fileHandle.queryPermission({mode:"readwrite"}))==="granted") await readFromFile();
+    else pendingReconnect=true;     /* will reconnect on first click */
+  }
+  setFileStatus();
+}
+
+/* ---------- sound (all synthesised — no files, works offline) ---------- */
+let AC = null;
+function ac(){
+  if(!AC){ AC = new (window.AudioContext||window.webkitAudioContext)(); }
+  if(AC.state==="suspended") AC.resume();
+  return AC;
+}
+function tone(freq, dur, {type="sine", gain=0.18, when=0, slide=0}={}){
+  if(!cfg.sound) return;
+  try{
+    const a=ac(), t=a.currentTime+when;
+    const o=a.createOscillator(), g=a.createGain();
+    o.type=type; o.frequency.setValueAtTime(freq,t);
+    if(slide) o.frequency.exponentialRampToValueAtTime(Math.max(40,freq+slide), t+dur);
+    g.gain.setValueAtTime(0.0001,t);
+    g.gain.exponentialRampToValueAtTime(gain,t+0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+    o.connect(g).connect(a.destination);
+    o.start(t); o.stop(t+dur+0.05);
+  }catch(e){}
+}
+function noise(dur,{gain=0.25,when=0,freq=900,q=0.8,rise=0.08}={}){
+  if(!cfg.sound) return;
+  try{
+    const a=ac(), t=a.currentTime+when;
+    const len=Math.ceil(a.sampleRate*dur);
+    const buf=a.createBuffer(1,len,a.sampleRate);
+    const d=buf.getChannelData(0);
+    for(let i=0;i<len;i++) d[i]=Math.random()*2-1;
+    const src=a.createBufferSource(); src.buffer=buf;
+    const f=a.createBiquadFilter(); f.type="bandpass"; f.frequency.value=freq; f.Q.value=q;
+    const g=a.createGain();
+    g.gain.setValueAtTime(0.0001,t);
+    g.gain.exponentialRampToValueAtTime(gain,t+rise);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+    src.connect(f).connect(g).connect(a.destination);
+    src.start(t);
+  }catch(e){}
+}
+const sfx = {
+  tick(){ tone(880,0.09,{type:"square",gain:0.1}); },
+  go(){ tone(1320,0.22,{type:"square",gain:0.14}); },
+  whistle(){ tone(2350,0.14,{type:"square",gain:0.12}); tone(2350,0.32,{type:"square",gain:0.12,when:0.18}); },
+  thump(){ tone(95,0.12,{type:"sine",gain:0.4,slide:-40}); },
+  bounce(){ tone(180,0.06,{type:"sine",gain:0.12}); },
+  goal(){ noise(1.6,{gain:0.32,freq:850,q:0.6,rise:0.05});       /* crowd roar */
+          tone(523,0.12,{gain:0.14}); tone(659,0.12,{gain:0.14,when:0.1});
+          tone(784,0.3,{gain:0.16,when:0.2}); },
+  ownGoal(){ noise(1.1,{gain:0.2,freq:400,q:0.7,rise:0.25});     /* crowd "ohhh" */
+          tone(330,0.25,{gain:0.12,slide:-110}); },
+  fanfare(){ [523,659,784,1047].forEach((f,i)=>tone(f,0.22,{gain:0.16,when:i*0.13}));
+          noise(2.2,{gain:0.3,freq:900,q:0.5,rise:0.1}); },
+};
+
+/* ---------- DOM ---------- */
+const video=document.getElementById("cam"), canvas=document.getElementById("game"),
+ctx=canvas.getContext("2d"), ovTitle=document.getElementById("ovTitle"),
+ovSub=document.getElementById("ovSub"), brand=document.getElementById("brand"),
+meta=document.getElementById("meta"), boardBox=document.getElementById("boardBox"),
+entryWrap=document.getElementById("entryWrap"), nameInput=document.getElementById("nameInput"),
+goBtn=document.getElementById("goBtn"),
+admin=document.getElementById("admin");
+
+brand.innerHTML = `${COMPANY_NAME} <span>· ${STAND_NAME}</span>`;
+if(document.fonts && document.fonts.load){            /* warm the brand font for canvas text */
+  document.fonts.load("500 20px Vodafone"); document.fonts.load("800 20px Vodafone");
+}
+
+let W=0,H=0;
+function resize(){ W=canvas.width=innerWidth; H=canvas.height=innerHeight; }
+addEventListener("resize", resize); resize();
+
+/* ---------- admin wiring ---------- */
+const sliders=[
+  ["sTrack","vTrack","track", v=>v.toFixed(2)],
+  ["sHead","vHead","head",   v=>"×"+v.toFixed(2)],
+  ["sGrav","vGrav","grav",   v=>v.toFixed(2)],
+  ["sPow","vPow","pow",      v=>"×"+v.toFixed(1)],
+  ["sGoal","vGoal","goalH",  v=>Math.round(v*100)+"% tall"],
+  ["sSecs","vSecs","secs",   v=>v+"s"],
+  ["sQs","vQs","qs",         v=>v],
+];
+function syncSliders(){
+  for(const [sid,vid,key,fmt] of sliders){
+    document.getElementById(sid).value = cfg[key];
+    document.getElementById(vid).textContent = fmt(cfg[key]);
+  }
+  document.getElementById("cSound").checked = cfg.sound;
+  document.getElementById("cBall").checked = cfg.ball === "speechmark";
+  document.getElementById("cFace").checked = !!cfg.faceStart;
+  document.getElementById("cLocal").checked = !!cfg.localAI;
+}
+for(const [sid,vid,key,fmt] of sliders){
+  document.getElementById(sid).addEventListener("input", e=>{
+    cfg[key]=parseFloat(e.target.value);
+    document.getElementById(vid).textContent=fmt(cfg[key]);
+    saveCfg();
+  });
+}
+syncSliders();
+document.getElementById("cSound").addEventListener("change", e=>{ cfg.sound=e.target.checked; saveCfg(); });
+document.getElementById("cBall").addEventListener("change", e=>{ cfg.ball = e.target.checked ? "speechmark" : "football"; saveCfg(); });
+document.getElementById("cFace").addEventListener("change", e=>{ cfg.faceStart = e.target.checked; saveCfg(); if(state===S.ATTRACT) toState(S.ATTRACT); });
+document.getElementById("cLocal").addEventListener("change", e=>{ cfg.localAI = e.target.checked; saveCfg(); location.reload(); });
+document.getElementById("gear").onclick   = ()=> admin.classList.toggle("open");
+document.getElementById("btnClose").onclick = ()=> admin.classList.remove("open");
+document.getElementById("btnReset").onclick = ()=>{ admin.classList.remove("open"); toState(S.ATTRACT); };
+document.getElementById("btnFull").onclick = toggleFullscreen;
+document.getElementById("btnDefaults").onclick = ()=>{ cfg={...DEFAULTS}; saveCfg(); syncSliders(); };
+document.getElementById("btnClearBoard").onclick = ()=>{
+  if(confirm("Clear the whole leaderboard?")){ saveBoard([]); saveToFile(); toState(S.ATTRACT); }
+};
+document.getElementById("btnConnect").onclick = connectFile;
+document.getElementById("btnExport").onclick = exportCSV;
+document.getElementById("btnImport").onclick = importFile;
+function toggleFullscreen(){
+  if(document.fullscreenElement) document.exitFullscreen();
+  else document.documentElement.requestFullscreen().catch(()=>{});
+}
+addEventListener("keydown", e=>{
+  if(document.activeElement===nameInput) return;
+  const k=e.key.toLowerCase();
+  if(k==="a") admin.classList.toggle("open");
+  if(k==="r"){ admin.classList.remove("open"); toState(S.ATTRACT); }
+  if(k==="f") toggleFullscreen();
+  if(k==="m"){ cfg.sound=!cfg.sound; saveCfg(); syncSliders(); }
+  if(k===" "){ e.preventDefault();
+    if(state===S.ATTRACT || state===S.BOARD) startGame(); }
+});
+goBtn.addEventListener("click", ()=> startGame());
+
+/* unlock audio + keep the screen awake on first interaction */
+let wakeLock=null;
+async function keepAwake(){
+  try{ wakeLock = await navigator.wakeLock?.request("screen"); }catch(e){}
+}
+document.addEventListener("visibilitychange", ()=>{ if(!document.hidden) keepAwake(); });
+["pointerdown","keydown"].forEach(ev=>
+  addEventListener(ev, ()=>{ if(cfg.sound) ac(); keepAwake();
+    if(pendingReconnect && fileHandle){ pendingReconnect=false; readFromFile().then(setFileStatus); }
+  }, {once:false}));
+
+/* auto-hide the cursor when idle (stand mode) */
+let cursorT=null;
+addEventListener("mousemove", ()=>{
+  document.body.classList.remove("hidecursor");
+  clearTimeout(cursorT);
+  cursorT=setTimeout(()=>document.body.classList.add("hidecursor"), 3000);
+});
+
+/* ---------- state ---------- */
+const S={LOADING:0,ATTRACT:1,COUNTDOWN:2,QUESTION:3,FEEDBACK:4,ENTRY:5,BOARD:6};
+let state=S.LOADING, stateT=0;
+let detector=null, faceSeen=0, faceLost=0;
+let head={x:innerWidth/2,y:innerHeight*0.65,r:70,vx:0,vy:0,px:0,py:0,live:false};
+let mouse={x:innerWidth/2,y:innerHeight*0.65};
+let gameQs=[], practiceQ=null, qIndex=0, correctCount=0, points=0, qTime=0, readT=0, feedback=null;
+let ball=null, ballRespawn=0, ballSpin=0, thump=0, shake=0, lastEntryT=0, lastRank=0, lastCount=3;
+let confetti=[], trail=[];
+addEventListener("mousemove", e=>{ mouse.x=e.clientX; mouse.y=e.clientY; });
+
+async function init(){
+  setOverlay("WARMING UP THE PITCH…","Loading camera and face tracking");
+  try{
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video:{width:{ideal:1280},height:{ideal:720},facingMode:"user"},audio:false});
+    video.srcObject=stream;
+    await new Promise(r=>video.onloadedmetadata=r);
+    await video.play();
+  }catch(e){ setOverlay("CAMERA BLOCKED","Allow camera access and reload — or use the mouse to test."); }
+  const CDN = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14";
+  const LOCAL = "./mediapipe";
+  const MODEL_CDN = "https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite";
+  async function buildDetector(base, model){
+    const mod = await import(`${base}/vision_bundle.mjs`);
+    const files = await mod.FilesetResolver.forVisionTasks(`${base}/wasm`);
+    return mod.FaceDetector.createFromOptions(files,{
+      baseOptions:{ modelAssetPath: model, delegate:"GPU" },
+      runningMode:"VIDEO", minDetectionConfidence:0.5});
+  }
+  /* try preferred source first, fall back to the other */
+  const order = cfg.localAI
+    ? [[LOCAL, `${LOCAL}/blaze_face_short_range.tflite`], [CDN, MODEL_CDN]]
+    : [[CDN, MODEL_CDN], [LOCAL, `${LOCAL}/blaze_face_short_range.tflite`]];
+  for(const [base,model] of order){
+    try{ detector = await buildDetector(base, model);
+      console.log("Face tracking loaded from", base); break;
+    }catch(e){ console.warn("Face tracking failed from "+base, e); }
+  }
+  if(!detector) console.warn("No face tracking available; mouse fallback only");
+  await loadQuestions();
+  await initResultsFile();
+  keepAwake();
+  toState(S.ATTRACT);
+}
+
+function setOverlay(t,s){ ovTitle.innerHTML=t||""; ovSub.innerHTML=s||""; }
+
+function toState(s){
+  state=s; stateT=0;
+  boardBox.classList.add("hidden"); entryWrap.classList.add("hidden");
+  goBtn.classList.add("hidden");
+  ovTitle.classList.remove("pop");
+  if(s===S.ATTRACT){
+    correctCount=0; points=0; qIndex=0; feedback=null; nameInput.blur();
+    spawnBall();                       /* free kickabout while waiting */
+    if(cfg.faceStart){
+      setOverlay(`STEP UP &amp; <span class="amber">USE YOUR HEAD</span>`,
+        `<span class="pulse">Stand in front of the camera — when we spot your face, kick-off begins.<br>Head the ball into goal A or B. Right answer + fast header = big points.</span>`);
+    } else {
+      setOverlay(`STEP UP &amp; <span class="amber">USE YOUR HEAD</span>`,
+        `Head the ball into goal A or B. Right answer + fast header = big points.<br>You get one practice header first.`);
+      goBtn.classList.remove("hidden");
+    }
+    const top=boardHTML("TODAY'S TOP HEADERS",10);
+    if(top){ boardBox.innerHTML=top; boardBox.classList.remove("hidden"); }
+    meta.textContent = cfg.faceStart ? "WAITING FOR A PLAYER" : "PRESS GO OR SPACE TO PLAY";
+  }
+  if(s===S.COUNTDOWN){ ball=null; trail=[]; setOverlay(`<span class="amber">3</span>`,""); sfx.tick(); }
+  if(s===S.QUESTION){
+    qTime=cfg.secs; readT=1.6; ball=null; trail=[];   /* reading time is free */
+    setOverlay("","");
+  }
+  if(s===S.FEEDBACK){
+    if(feedback?.right){ sfx.goal(); shake=1; goalConfetti(feedback.side); }
+    else if(feedback?.side) sfx.ownGoal();
+    else sfx.whistle();
+  }
+  if(s===S.ENTRY){
+    ball=null; sfx.whistle();
+    setOverlay(`FULL TIME — <span class="amber">${normScore()} PTS</span>`,
+      `${correctCount}/${gameQs.length} correct · score is your average per question, so it's fair however many questions are set`);
+    ovTitle.classList.add("pop");
+    entryWrap.classList.remove("hidden");
+    nameInput.value=""; nameInput.classList.remove("bad");
+    document.getElementById("entryHint").textContent = "Enter your email and press ENTER for the leaderboard (used for prize follow-up)";
+    setTimeout(()=>nameInput.focus(),50);
+    meta.textContent="FULL TIME";
+  }
+  if(s===S.BOARD){
+    nameInput.blur();
+    const total=getBoard().length;
+    let title;
+    if(lastRank===1){ title=`<span class="amber">NEW TOP HEADER! 🏆</span>`; sfx.fanfare(); topConfetti(); }
+    else if(lastRank<=3){ title=`PODIUM FINISH — <span class="amber">#${lastRank}</span>`; sfx.fanfare(); topConfetti(); }
+    else title=`YOU'RE <span class="amber">#${lastRank}</span> OF ${total} TODAY`;
+    setOverlay(title,"");
+    ovTitle.classList.add("pop");
+    boardBox.innerHTML=boardHTML("TODAY'S TOP HEADERS",8,lastEntryT);
+    boardBox.classList.remove("hidden");
+  }
+}
+
+nameInput.addEventListener("keydown", e=>{ if(e.key==="Enter"&&state===S.ENTRY) submitEmail(); });
+nameInput.addEventListener("input", ()=> nameInput.classList.remove("bad"));
+function validEmail(v){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v); }
+/* normalised score = average points per real question, so the leaderboard stays
+   fair even if the number of questions is changed mid-event */
+function normScore(){ return gameQs.length ? Math.round(points/gameQs.length) : 0; }
+function submitEmail(){
+  const v = nameInput.value.trim();
+  if(!validEmail(v)){
+    nameInput.classList.remove("bad"); void nameInput.offsetWidth; nameInput.classList.add("bad");
+    document.getElementById("entryHint").textContent = "That doesn't look like an email — try again (or press ESC to skip)";
+    nameInput.focus();
+    return;
+  }
+  const t=Date.now(); lastEntryT=t;
+  const b=getBoard();
+  const e={ email:v, pts:normScore(), raw:points, qs:gameQs.length, correct:correctCount, t };
+  b.push(e); b.sort((x,y)=> y.pts-x.pts || x.t-y.t);
+  lastRank=b.indexOf(e)+1;
+  saveBoard(b.slice(0,500));
+  saveToFile();                         /* auto-write to linked results file */
+  toState(S.BOARD);
+}
+/* ESC skips entry without saving (e.g. someone who doesn't want to leave an email) */
+nameInput.addEventListener("keydown", e=>{ if(e.key==="Escape" && state===S.ENTRY){ lastRank=0; toState(S.ATTRACT); } });
+
+function pickQuestions(){
+  const pool=[...QUESTION_BANK].sort(()=>Math.random()-0.5);
+  gameQs=pool.slice(0,Math.min(cfg.qs,pool.length));
+  /* practice question: a spare from the pool if there is one, else any random */
+  practiceQ = pool.length>gameQs.length ? pool[gameQs.length]
+            : pool[Math.floor(Math.random()*pool.length)];
+  lastCount=gameQs.length;
+}
+function curQ(){ return qIndex<0 ? practiceQ : gameQs[qIndex]; }
+function isPractice(){ return qIndex<0; }
+function startGame(){
+  if(state!==S.ATTRACT && state!==S.BOARD) return;
+  correctCount=0; points=0; lastRank=0;
+  pickQuestions();
+  qIndex=-1;                /* -1 = the unscored practice question */
+  toState(S.COUNTDOWN);
+}
+function spawnBall(){
+  ball={x:W/2+(Math.random()*120-60), y:-40,
+        vx:(Math.random()*2-1)*60, vy:40, r:Math.max(26,H*0.035)};
+}
+function goals(){
+  const gh=H*cfg.goalH, gy=H*0.34-gh/2, gw=Math.max(26,W*0.025);
+  return {A:{x:0,y:gy,w:gw,h:gh}, B:{x:W-gw,y:gy,w:gw,h:gh}};
+}
+
+/* ---------- particles ---------- */
+const CONF_COLS=["#E60000","#F2F7F3","#37C871","#FFD964"];
+function burst(x,y,n,spread){
+  for(let i=0;i<n;i++){
+    const a=Math.random()*Math.PI*2, sp=(0.3+Math.random()*0.7)*spread;
+    confetti.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-spread*0.4,
+      rot:Math.random()*Math.PI, vr:(Math.random()-0.5)*8,
+      col:CONF_COLS[i%CONF_COLS.length], life:1+Math.random()});
+  }
+}
+function goalConfetti(side){
+  const g=goals()[side==="A"?"A":"B"];
+  burst(side==="A"?g.w:W-g.w, g.y+g.h/2, 60, H*0.6);
+}
+function topConfetti(){ burst(W*0.3,H*0.2,70,H*0.55); burst(W*0.7,H*0.2,70,H*0.55); }
+function stepConfetti(){
+  for(const p of confetti){
+    p.vy+=H*0.7*dt; p.x+=p.vx*dt; p.y+=p.vy*dt; p.rot+=p.vr*dt; p.life-=dt;
+  }
+  confetti=confetti.filter(p=>p.life>0 && p.y<H+40);
+}
+function drawConfetti(){
+  for(const p of confetti){
+    ctx.save();
+    ctx.globalAlpha=Math.min(1,p.life);
+    ctx.translate(p.x,p.y); ctx.rotate(p.rot);
+    ctx.fillStyle=p.col;
+    ctx.fillRect(-5,-3,10,6);
+    ctx.restore();
+  }
+}
+
+/* ---------- face tracking ---------- */
+function trackFace(){
+  let found=false;
+  if(detector && video.readyState>=2){
+    const res=detector.detectForVideo(video, performance.now());
+    if(res.detections.length){
+      const scale=Math.max(W/video.videoWidth,H/video.videoHeight);
+      const offX=(W-video.videoWidth*scale)/2, offY=(H-video.videoHeight*scale)/2;
+      /* map every detected face to screen space */
+      const cands = res.detections.map(det=>{
+        const d=det.boundingBox;
+        const cx=(d.originX+d.width/2)*scale+offX, cy=(d.originY+d.height/2)*scale+offY;
+        return { tx:W-cx, ty:cy, tr:Math.max(50,(d.width*scale)*cfg.head), size:d.width*scale };
+      });
+      const inPlay = (state===S.COUNTDOWN || state===S.QUESTION || state===S.FEEDBACK);
+      let pick = cands[0];
+      if(inPlay){
+        /* during a game: stay with the face nearest the current ring (continuity),
+           so a colleague leaning in behind the player can't steal the ring */
+        let bestD=Infinity;
+        for(const c of cands){
+          const d2=(c.tx-head.x)**2 + (c.ty-head.y)**2;
+          if(d2<bestD){ bestD=d2; pick=c; }
+        }
+      } else {
+        /* idle / attract: lock to the largest (closest) face — whoever steps up */
+        for(const c of cands) if(c.size>pick.size) pick=c;
+      }
+      head.x+=(pick.tx-head.x)*cfg.track; head.y+=(pick.ty-head.y)*cfg.track;
+      head.r+=(pick.tr-head.r)*0.2;
+      found=true;
+    }
+  }
+  if(!found){ head.x+=(mouse.x-head.x)*0.3; head.y+=(mouse.y-head.y)*0.3; }
+  head.vx=head.x-head.px; head.vy=head.y-head.py;
+  head.px=head.x; head.py=head.y; head.live=found;
+  if(found){ faceSeen+=dt; faceLost=0; } else { faceLost+=dt; if(faceLost>0.6) faceSeen=0; }
+}
+
+/* ---------- physics ---------- */
+function stepBall(goalsActive){
+  if(!ball){ ballRespawn-=dt; if(ballRespawn<=0) spawnBall(); return; }
+  ball.vy+=H*cfg.grav*dt;
+  ball.x+=ball.vx*dt; ball.y+=ball.vy*dt;
+  ballSpin+=ball.vx*dt*0.004;
+  trail.push({x:ball.x,y:ball.y,r:ball.r,life:0.3});
+
+  const g=goals();
+  if(ball.x<ball.r){
+    if(goalsActive && ball.y>g.A.y && ball.y<g.A.y+g.A.h) return resolveGoal("A");
+    ball.x=ball.r; ball.vx=Math.abs(ball.vx)*0.9; sfx.bounce();
+  }
+  if(ball.x>W-ball.r){
+    if(goalsActive && ball.y>g.B.y && ball.y<g.B.y+g.B.h) return resolveGoal("B");
+    ball.x=W-ball.r; ball.vx=-Math.abs(ball.vx)*0.9; sfx.bounce();
+  }
+  if(ball.y<-120 && ball.vy<=0) ball.vy=Math.abs(ball.vy)*0.6;
+
+  const dx=ball.x-head.x, dy=ball.y-head.y;
+  const dist=Math.hypot(dx,dy), minD=ball.r+head.r;
+  if(dist<minD && dist>0.001){
+    const nx=dx/dist, ny=dy/dist;
+    ball.x=head.x+nx*minD; ball.y=head.y+ny*minD;
+    const speed=Math.max(Math.hypot(ball.vx,ball.vy)*0.85,H*0.5)*cfg.pow;
+    ball.vx=nx*speed+head.vx*14*cfg.pow;
+    ball.vy=Math.min(ny*speed,-H*0.45*cfg.pow)+head.vy*8;
+    thump=1; shake=Math.max(shake,0.5); sfx.thump();
+  }
+  if(ball.y>H+80){ ball=null; ballRespawn=0.6; }
+}
+
+function resolveGoal(side){
+  const q=curQ();
+  const right=side===q.correct;
+  let earned=0;
+  if(right && !isPractice()){
+    correctCount++;
+    earned=POINTS_CORRECT+Math.round(Math.max(0,qTime)*POINTS_PER_SECOND_LEFT);
+    points+=earned;
+  }
+  feedback={right,side,
+    msg:right?"GOAL!":"OWN GOAL!",
+    detail: isPractice()
+      ? (right ? "Nice header — practice doesn't score" : `It was ${q.correct} — just practice, no harm done`)
+      : (right ? `+${earned} pts (${Math.max(0,qTime).toFixed(1)}s left)`
+               : `It was ${q.correct}: ${q.correct==="A"?q.a:q.b}`)};
+  ball=null; toState(S.FEEDBACK);
+}
+
+/* ---------- drawing ---------- */
+function drawCamera(){
+  if(video.readyState<2){ ctx.fillStyle="#0A1410"; ctx.fillRect(-20,-20,W+40,H+40); return; }
+  const scale=Math.max(W/video.videoWidth,H/video.videoHeight);
+  const vw=video.videoWidth*scale, vh=video.videoHeight*scale;
+  const ox=(W-vw)/2, oy=(H-vh)/2;
+  ctx.save(); ctx.translate(W,0); ctx.scale(-1,1);
+  ctx.drawImage(video,ox,oy,vw,vh); ctx.restore();
+  ctx.fillStyle="rgba(7,14,11,0.74)"; ctx.fillRect(-20,-20,W+40,H+40);
+  ctx.save();
+  ctx.beginPath(); ctx.arc(head.x,head.y,head.r,0,Math.PI*2); ctx.clip();
+  ctx.translate(W,0); ctx.scale(-1,1);
+  ctx.drawImage(video,ox,oy,vw,vh); ctx.restore();
+}
+function drawPitchLines(){
+  ctx.strokeStyle="rgba(242,247,243,0.18)"; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(W/2,0); ctx.lineTo(W/2,H); ctx.stroke();
+  ctx.beginPath(); ctx.arc(W/2,H/2,Math.min(W,H)*0.14,0,Math.PI*2); ctx.stroke();
+}
+function drawHeadRing(){
+  const t=performance.now()/1000;
+  ctx.save();
+  ctx.shadowColor="rgba(230,0,0,0.9)"; ctx.shadowBlur=24+thump*40;
+  ctx.strokeStyle=head.live?"#E60000":"rgba(242,247,243,0.7)";
+  ctx.lineWidth=5+thump*6;
+  ctx.beginPath(); ctx.arc(head.x,head.y,head.r,0,Math.PI*2); ctx.stroke();
+  const a=t*2.2; ctx.fillStyle="#E60000";
+  ctx.beginPath(); ctx.arc(head.x+Math.cos(a)*head.r, head.y+Math.sin(a)*head.r, 5,0,Math.PI*2); ctx.fill();
+  ctx.restore();
+  thump=Math.max(0,thump-dt*4);
+}
+function drawTrail(){
+  for(const t of trail){ t.life-=dt; }
+  trail=trail.filter(t=>t.life>0);
+  for(const t of trail){
+    ctx.save();
+    ctx.globalAlpha=t.life*0.5;
+    ctx.fillStyle="#F2F7F3";
+    ctx.beginPath(); ctx.arc(t.x,t.y,t.r*t.life*1.6,0,Math.PI*2); ctx.fill();
+    ctx.restore();
+  }
+}
+function pentagonPath(cx,cy,r,rot){
+  ctx.beginPath();
+  for(let i=0;i<5;i++){
+    const a=rot+i*(Math.PI*2/5)-Math.PI/2;
+    const x=cx+Math.cos(a)*r, y=cy+Math.sin(a)*r;
+    i?ctx.lineTo(x,y):ctx.moveTo(x,y);
+  }
+  ctx.closePath();
+}
+function drawBall(){
+  if(!ball) return;
+  if(cfg.ball === "speechmark") drawSpeechmarkBall();
+  else drawFootball();
+}
+function drawFootball(){
+  const {x,y,r}=ball;
+  ctx.save();
+  ctx.shadowColor="rgba(0,0,0,.6)"; ctx.shadowBlur=18;
+  const gr=ctx.createRadialGradient(x-r*0.35,y-r*0.4,r*0.1,x,y,r);
+  gr.addColorStop(0,"#FFFFFF"); gr.addColorStop(0.75,"#E9EDEA"); gr.addColorStop(1,"#B9C2BC");
+  ctx.fillStyle=gr;
+  ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();
+  ctx.shadowBlur=0;
+  ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.clip();
+  ctx.fillStyle="#15201A";
+  pentagonPath(x,y,r*0.40,ballSpin); ctx.fill();
+  ctx.strokeStyle="rgba(21,32,26,0.55)"; ctx.lineWidth=Math.max(1.5,r*0.05);
+  for(let i=0;i<5;i++){
+    const a=ballSpin+i*(Math.PI*2/5)-Math.PI/2;
+    const px=x+Math.cos(a)*r*0.95, py=y+Math.sin(a)*r*0.95;
+    pentagonPath(px,py,r*0.34,ballSpin+Math.PI/5); ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(x+Math.cos(a)*r*0.40, y+Math.sin(a)*r*0.40);
+    ctx.lineTo(px,py); ctx.stroke();
+  }
+  const sh=ctx.createRadialGradient(x,y,r*0.55,x,y,r);
+  sh.addColorStop(0,"rgba(0,0,0,0)"); sh.addColorStop(1,"rgba(10,20,16,0.35)");
+  ctx.fillStyle=sh;
+  ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();
+  ctx.restore();
+}
+/* Vodafone ball: red sphere with the real extracted speechmark logo,
+   plus a subtle black outline around the mark so it pops on the pitch */
+function drawSpeechmarkBall(){
+  const {x,y,r}=ball;
+  ctx.save();
+  ctx.shadowColor="rgba(0,0,0,.6)"; ctx.shadowBlur=18;
+  const gr=ctx.createRadialGradient(x-r*0.35,y-r*0.4,r*0.1,x,y,r);
+  gr.addColorStop(0,"#FF3B3B"); gr.addColorStop(0.55,"#E60000"); gr.addColorStop(1,"#A60000");
+  ctx.fillStyle=gr;
+  ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();
+  ctx.shadowBlur=0;
+  if(speechReady){
+    const d=r*1.62;                 /* logo diameter on the ball */
+    ctx.save();
+    ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.clip();
+    ctx.translate(x,y); ctx.rotate(ballSpin*0.6);   /* gentle tumble */
+    ctx.shadowColor="rgba(0,0,0,0.85)"; ctx.shadowBlur=Math.max(2,r*0.07);
+    ctx.drawImage(speechImg,-d/2,-d/2,d,d);          /* shadow pass = black outline */
+    ctx.drawImage(speechImg,-d/2,-d/2,d,d);          /* deepen the outline */
+    ctx.shadowBlur=0;
+    ctx.drawImage(speechImg,-d/2,-d/2,d,d);          /* crisp white on top */
+    ctx.restore();
+  }
+  const sh=ctx.createRadialGradient(x,y,r*0.55,x,y,r);
+  sh.addColorStop(0,"rgba(0,0,0,0)"); sh.addColorStop(1,"rgba(80,0,0,0.35)");
+  ctx.fillStyle=sh;
+  ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2); ctx.fill();
+  ctx.restore();
+}
+function drawGoals(){
+  if(state!==S.QUESTION && state!==S.FEEDBACK) return;
+  const g=goals(); const q=curQ();
+  for(const side of ["A","B"]){
+    const r=g[side];
+    let col="#F2F7F3";
+    if(feedback && state===S.FEEDBACK && feedback.side===side)
+      col=feedback.right?"#37C871":"#E4452A";
+    ctx.save();
+    ctx.strokeStyle=col==="#F2F7F3"?"rgba(242,247,243,.5)":col;
+    ctx.lineWidth=2;
+    const step=12;
+    for(let y=r.y;y<=r.y+r.h;y+=step){ ctx.beginPath(); ctx.moveTo(r.x,y); ctx.lineTo(r.x+r.w,y); ctx.stroke(); }
+    for(let x=r.x;x<=r.x+r.w;x+=step){ ctx.beginPath(); ctx.moveTo(x,r.y); ctx.lineTo(x,r.y+r.h); ctx.stroke(); }
+    ctx.strokeStyle=col; ctx.lineWidth=6;
+    ctx.strokeRect(r.x,r.y,r.w,r.h);
+    ctx.restore();
+
+    const text=side==="A"?q.a:q.b;
+    const cw=Math.min(W*0.26,380), pad=16;
+    ctx.save();
+    ctx.font=`600 ${Math.max(18,H*0.026)}px 'Vodafone','Space Grotesk',sans-serif`;
+    const lines=wrap(text,cw-2*pad);
+    const lh=Math.max(24,H*0.034);
+    const boxH=lh*lines.length+2*pad+lh*1.2;
+    const bx=side==="A"?r.w+18:W-r.w-18-cw;
+    const by=r.y+r.h/2-boxH/2;
+    ctx.fillStyle="rgba(7,14,11,.82)";
+    roundRect(bx,by,cw,boxH,14); ctx.fill();
+    ctx.strokeStyle=col; ctx.lineWidth=2;
+    roundRect(bx,by,cw,boxH,14); ctx.stroke();
+    ctx.fillStyle="#E60000";
+    ctx.font=`800 ${Math.max(20,H*0.03)}px 'Vodafone','Unbounded',sans-serif`;
+    ctx.textAlign="left"; ctx.textBaseline="top";
+    ctx.fillText(side,bx+pad,by+pad);
+    ctx.fillStyle="#F2F7F3";
+    ctx.font=`600 ${Math.max(18,H*0.026)}px 'Vodafone','Space Grotesk',sans-serif`;
+    lines.forEach((ln,i)=>ctx.fillText(ln,bx+pad,by+pad+lh*1.2+i*lh));
+    ctx.restore();
+  }
+}
+function drawQuestion(){
+  if(state!==S.QUESTION && state!==S.FEEDBACK) return;
+  const q=curQ();
+  ctx.save();
+  ctx.textAlign="center"; ctx.textBaseline="top";
+  ctx.fillStyle="#E60000";
+  ctx.font=`500 ${Math.max(14,H*0.02)}px 'Vodafone','Unbounded',sans-serif`;
+  ctx.fillText(isPractice() ? "PRACTICE — DOESN'T COUNT"
+                            : `QUESTION ${qIndex+1} OF ${gameQs.length}`,W/2,H*0.085);
+  ctx.fillStyle="#F2F7F3";
+  ctx.shadowColor="rgba(0,0,0,.8)"; ctx.shadowBlur=16;
+  ctx.font=`800 ${Math.max(24,H*0.044)}px 'Vodafone','Unbounded',sans-serif`;
+  wrap(q.q,W*0.7).forEach((ln,i)=>ctx.fillText(ln,W/2,H*0.085+H*0.035+i*H*0.055));
+  ctx.restore();
+
+  if(state===S.QUESTION && readT>0){
+    /* "ball incoming" marker during free reading time */
+    ctx.save();
+    ctx.textAlign="center"; ctx.textBaseline="middle";
+    const blink=(Math.sin(performance.now()/120)+1)/2;
+    ctx.globalAlpha=0.4+blink*0.6;
+    ctx.fillStyle="#E60000";
+    ctx.font=`800 ${Math.max(18,H*0.028)}px 'Vodafone','Unbounded',sans-serif`;
+    ctx.fillText("⚽ INCOMING", W/2, H*0.30);
+    ctx.restore();
+  }
+  if(state===S.QUESTION && readT<=0){
+    const frac=Math.max(0,qTime/cfg.secs);
+    ctx.fillStyle="rgba(242,247,243,.18)"; ctx.fillRect(W*0.25,H-26,W*0.5,10);
+    ctx.fillStyle=frac<0.3?"#E4452A":"#E60000";
+    ctx.fillRect(W*0.25,H-26,W*0.5*frac,10);
+  }
+}
+function drawFeedback(){
+  if(state!==S.FEEDBACK||!feedback) return;
+  ctx.save();
+  ctx.textAlign="center"; ctx.textBaseline="middle";
+  ctx.fillStyle=feedback.right?"#37C871":"#E4452A";
+  ctx.shadowColor="rgba(0,0,0,.8)"; ctx.shadowBlur=20;
+  ctx.font=`800 ${Math.max(40,H*0.09)}px 'Vodafone','Unbounded',sans-serif`;
+  ctx.fillText(feedback.msg,W/2,H*0.46);
+  ctx.fillStyle="#F2F7F3";
+  ctx.font=`600 ${Math.max(18,H*0.03)}px 'Vodafone','Space Grotesk',sans-serif`;
+  ctx.fillText(feedback.detail,W/2,H*0.46+H*0.08);
+  ctx.restore();
+}
+function wrap(text,maxW){
+  const words=text.split(" "); const lines=[]; let cur="";
+  for(const w of words){
+    const t=cur?cur+" "+w:w;
+    if(ctx.measureText(t).width>maxW&&cur){ lines.push(cur); cur=w; } else cur=t;
+  }
+  if(cur) lines.push(cur);
+  return lines;
+}
+function roundRect(x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
+}
+
+/* ---------- main loop ---------- */
+let last=performance.now(), dt=0, lastCountdownN=4;
+function loop(now){
+  dt=Math.min(0.033,(now-last)/1000); last=now; stateT+=dt;
+
+  trackFace();
+  stepConfetti();
+
+  /* screen shake on big headers */
+  shake=Math.max(0,shake-dt*3);
+  const sx=(Math.random()-0.5)*shake*10, sy=(Math.random()-0.5)*shake*10;
+  ctx.save(); ctx.translate(sx,sy);
+
+  drawCamera();
+  drawPitchLines();
+
+  switch(state){
+    case S.ATTRACT:
+      stepBall(false);                      /* kickabout, no goals */
+      if(cfg.faceStart && faceSeen>1.2) startGame();
+      break;
+    case S.COUNTDOWN:{
+      const n=3-Math.floor(stateT);
+      meta.textContent = isPractice() ? "PRACTICE FIRST" : "KICK-OFF";
+      if(n>0){
+        if(n!==lastCountdownN){ lastCountdownN=n; if(stateT>0.1) sfx.tick(); }
+        setOverlay(`<span class="amber">${n}</span>`,
+          isPractice() ? "Warm-up header — doesn't count" : "For real this time!");
+      } else { sfx.go(); lastCountdownN=4; toState(S.QUESTION); }
+      break;
+    }
+    case S.QUESTION:
+      meta.textContent = isPractice() ? "PRACTICE · NO POINTS"
+                                      : `Q${qIndex+1}/${gameQs.length} · ${points} PTS`;
+      if(readT>0){
+        readT-=dt;
+        if(readT<=0) spawnBall();           /* clock starts when the ball drops */
+      } else {
+        qTime-=dt;
+        stepBall(true);
+        if(qTime<=0 && state===S.QUESTION){
+          feedback={right:false,side:null,msg:"FULL-TIME WHISTLE!",
+            detail: isPractice() ? `Too slow — it was ${curQ().correct} (just practice)`
+                                 : `Too slow — it was ${curQ().correct}`};
+          ball=null; toState(S.FEEDBACK);
+        }
+      }
+      break;
+    case S.FEEDBACK:
+      if(stateT>2){
+        feedback=null;
+        if(isPractice()){ qIndex=0; toState(S.COUNTDOWN); }   /* second countdown, then the real thing */
+        else {
+          qIndex++;
+          if(qIndex>=gameQs.length) toState(S.ENTRY);
+          else toState(S.QUESTION);
+        }
+      }
+      break;
+    case S.ENTRY:
+      if(stateT>30){ lastRank=0; toState(S.ATTRACT); }   /* walked away — don't save */
+      break;
+    case S.BOARD:
+      if(stateT>9) toState(S.ATTRACT);
+      break;
+  }
+
+  drawGoals();
+  drawQuestion();
+  drawTrail();
+  if(state===S.ATTRACT||state===S.QUESTION||state===S.FEEDBACK) drawBall();
+  drawHeadRing();
+  drawConfetti();
+  drawFeedback();
+
+  ctx.restore();
+  requestAnimationFrame(loop);
+}
+
+init();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

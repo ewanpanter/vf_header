@@ -1,0 +1,34 @@
+question,answerA,answerB,correct
+Who coined the term 'Artificial Intelligence'?,John McCarthy,Alan Turing,A
+What does 'LLM' stand for?,Large Language Model,Logical Learning Machine,A
+The Turing Test checks if a machine can…,Beat you at chess,Pass as human in chat,B
+"Roughly when was the first chatbot, ELIZA, built?",1960s,1990s,A
+'Hallucination' in AI means the model…,Overheats,Makes things up,B
+AlphaGo famously beat a world champion at…,Go,Poker,A
+A 'neural network' is loosely inspired by…,The human brain,Spider webs,A
+Which came first?,The smartphone,AI as a research field,B
+GPU originally stood for a chip made for…,Graphics,Grammar,A
+Training data is best described as…,The AI's gym schedule,Examples a model learns from,B
+What does 'AIB' stand for?,AI Booster,AI Base,A
+What does an Agent use in a loop to accomplish goals?,Data files,Tools,B
+A MCP allows an agent to do what?,Interface with other systems,Record its output,A
+What does RAG stand for?,Responsible Agentic Grounding,Retrieval Augmented Generation,B
+What does a jail break do?,Defeats AI safety measures,Allows an AI to be copied,A
+Can an LLM process unstructured data?,Yes,No,A
+What does 'RL' stand for?,Recurring Learning,Reinforcement Learning,B
+What is context?,Deceptive instructions,The information provided to a model,B
+What model powered the first ChatGPT?,GPT4,GPT3.5,B
+What are Google's AI models called?,Leo,Gemini,B
+What is Vodafone's MS PowerPlatform low-code AI tool?,AIB,Copilot Studio,B
+What is Vodafone's no-code agent builder?,Github Copilot,Copilot Agent Builder,B
+The 2026 Vodafone AI summit took place in what city?,Dresden,Miami,A
+Which company has the highest valuation?,Anthropic,OpenAI,A
+How many tokens does Gemini support in its context window?,256K,1M,B
+In what year did IBM's Deep Blue defeat world chess champion Garry Kasparov?,1997,2005,A
+Who won a Nobel prize for their work in AI Protein folding in 2024?,Geoffrey Hinton,Demis Hassabis,B
+What does 'temperature' control in an LLM?,Model creativity and randomness,Model processing speed,A
+What is 'prompt injection'?,Bypassing AI safety instructions via user input,Overloading the server with rapid prompts,A
+"When using enterprise MS365 Copilot, is your data used to train the public model?",Yes,No,B
+What is the purpose of a 'system prompt'?,Setting the rules and persona of the AI,Starting the GPU server,A
+Which company developed the Claude family of LLMs?,Anthropic,OpenAI,A
+What is a 'token' in the context of LLMs?,A security password,A word or chunk of a word,B
